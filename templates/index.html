@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Ana Sayfa - Blockchain Etkinlik Kartları{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h1 class="display-4 mb-4">Blockchain Etkinlik Kartları</h1>
+        <p class="lead mb-5">
+            Blockchain teknolojisi ile güvenli, benzersiz ve doğrulanabilir etkinlik kartları oluşturun.
+            Her kart, şifrelenmiş QR kod ile korunur ve blockchain üzerinde doğrulanır.
+        </p>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        Kart Oluştur
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <p>Etkinliğiniz için benzersiz, şifreli ve doğrulanabilir kartlar oluşturun.</p>
+                        <a href="{{ url_for('create') }}" class="btn btn-primary mt-auto">Kart Oluştur</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        Kart Doğrula
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <p>Bir kartın geçerli olup olmadığını kontrol edin ve kart bilgilerini görüntüleyin.</p>
+                        <a href="{{ url_for('verify') }}" class="btn btn-primary mt-auto">Kart Doğrula</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-5">
+            <h2 class="h4 mb-4">Nasıl Çalışır?</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">1. Kart Oluştur</h5>
+                            <p class="card-text">Etkinlik bilgilerini girin ve benzersiz bir kart oluşturun.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">2. QR Kod Alın</h5>
+                            <p class="card-text">Sistem, kart için benzersiz bir QR kod oluşturur.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">3. Doğrulama</h5>
+                            <p class="card-text">QR kod, blockchain üzerinde doğrulanarak kartın geçerliliğini kanıtlar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

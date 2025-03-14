@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Doğrulama Sonucu - Blockchain Etkinlik Kartları{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="h4 mb-0">Doğrulama Sonucu</h2>
+            </div>
+            <div class="card-body text-center">
+                {% if is_valid %}
+                    <div class="alert alert-success mb-4" role="alert">
+                        <h4 class="alert-heading">✓ Geçerli Kart</h4>
+                        <p>Bu kart blockchain üzerinde doğrulanmıştır ve geçerlidir.</p>
+                    </div>
+                    
+                    <div class="event-card mb-4">
+                        <div class="event-card-header">
+                            <h3>{{ card_data.event_name }}</h3>
+                            <p class="mb-0">{{ card_data.event_date }}</p>
+                        </div>
+                        <div class="event-card-body">
+                            <div class="row mb-3">
+                                <div class="col-6 text-start">
+                                    <strong>Katılımcı:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    {{ card_data.attendee_name }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6 text-start">
+                                    <strong>Yer:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    {{ card_data.event_location }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6 text-start">
+                                    <strong>Bilet Türü:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    {{ card_data.ticket_type }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-danger mb-4" role="alert">
+                        <h4 class="alert-heading">✗ Geçersiz Kart</h4>
+                        <p>Bu kart blockchain üzerinde doğrulanamamıştır.</p>
+                        {% if error %}
+                            <hr>
+                            <p class="mb-0">Hata: {{ error }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <p>Olası nedenler:</p>
+                    <ul class="text-start">
+                        <li>Kart hiç oluşturulmamış olabilir</li>
+                        <li>Doğrulama kodu hatalı veya eksik olabilir</li>
+                        <li>Kart değiştirilmiş veya tahrif edilmiş olabilir</li>
+                    </ul>
+                {% endif %}
+                
+                <div class="mt-4">
+                    <a href="{{ url_for('verify') }}" class="btn btn-primary">Başka Bir Kart Doğrula</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

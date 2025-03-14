@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}Etkinlik Kartı - Blockchain Etkinlik Kartları{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 text-center">
+        <h2 class="mb-4">Etkinlik Kartınız Oluşturuldu!</h2>
+        <p class="mb-4">Aşağıdaki kartı kaydedebilir veya yazdırabilirsiniz. QR kod, kartın benzersiz ve doğrulanabilir olduğunu kanıtlar.</p>
+        
+        <div class="event-card mb-4">
+            <div class="event-card-header">
+                <h3>{{ card_data.event_name }}</h3>
+                <p class="mb-0">{{ card_data.event_date }}</p>
+            </div>
+            <div class="event-card-body">
+                <div class="row mb-3">
+                    <div class="col-6 text-start">
+                        <strong>Katılımcı:</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                        {{ card_data.attendee_name }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6 text-start">
+                        <strong>Yer:</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                        {{ card_data.event_location }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6 text-start">
+                        <strong>Bilet Türü:</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                        {{ card_data.ticket_type }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6 text-start">
+                        <strong>Kart ID:</strong>
+                    </div>
+                    <div class="col-6 text-end">
+                        {{ card_id[:8] }}...
+                    </div>
+                </div>
+            </div>
+            <div class="event-card-footer">
+                <div class="qr-code">
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid">
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <button class="btn btn-primary me-2" onclick="window.print()">Kartı Yazdır</button>
+            <a href="{{ url_for('create') }}" class="btn btn-secondary">Yeni Kart Oluştur</a>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                Doğrulama Bilgileri
+            </div>
+            <div class="card-body">
+                <p>Bu kart blockchain üzerinde doğrulanabilir. Doğrulama için aşağıdaki kodu kullanabilirsiniz:</p>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" value="{{ encrypted_data }}" id="verification-code" readonly>
+                    <button class="btn btn-outline-secondary" type="button" onclick="copyVerificationCode()">Kopyala</button>
+                </div>
+                <p class="text-muted small">Bu kod, kartın benzersiz ve doğrulanabilir olduğunu kanıtlar.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function copyVerificationCode() {
+        var copyText = document.getElementById("verification-code");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value);
+        
+        var button = document.querySelector("button.btn-outline-secondary");
+        var originalText = button.innerHTML;
+        button.innerHTML = "Kopyalandı!";
+        setTimeout(function() {
+            button.innerHTML = originalText;
+        }, 2000);
+    }
+</script>
+{% endblock %}
