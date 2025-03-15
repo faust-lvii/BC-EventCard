@@ -59,13 +59,33 @@ def generate_key():
 # For Vercel, we'll use an environment variable for the key
 # In a production environment, you would use a more secure method
 # like a database or a key management service
-key = os.environ.get('ENCRYPTION_KEY')
-if not key:
+ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
+if ENCRYPTION_KEY:
+    try:
+        # Try to use the key from environment variable
+        key = ENCRYPTION_KEY.encode()
+        # Test if the key is valid by creating a Fernet instance
+        test_cipher = Fernet(key)
+        # If we get here, the key is valid
+    except Exception as e:
+        # If there's an error, generate a new key
+        print(f"Error with provided encryption key: {str(e)}")
+        key = generate_key()
+        print(f"Generated new key: {key.decode()}")
+else:
+    # No key provided, generate a new one
     key = generate_key()
-    # Note: In Vercel, you would set this as an environment variable
-    # This is just a fallback for local development
-    
-cipher_suite = Fernet(key)
+    print(f"No encryption key found in environment. Generated new key: {key.decode()}")
+    print("IMPORTANT: Set this key as ENCRYPTION_KEY in your Vercel environment variables")
+
+try:
+    cipher_suite = Fernet(key)
+except Exception as e:
+    print(f"Error creating Fernet cipher: {str(e)}")
+    # As a last resort, generate a new key
+    key = generate_key()
+    cipher_suite = Fernet(key)
+    print(f"Had to generate a new key due to error: {key.decode()}")
 
 @app.route('/')
 def index():
@@ -74,51 +94,57 @@ def index():
 @app.route('/create', methods=['GET', 'POST'])
 def create():
     if request.method == 'POST':
-        # Get form data
-        event_name = request.form.get('event_name')
-        event_date = request.form.get('event_date')
-        event_location = request.form.get('event_location')
-        attendee_name = request.form.get('attendee_name')
-        ticket_type = request.form.get('ticket_type')
-        
-        # Create card data
-        card_data = {
-            'event_name': event_name,
-            'event_date': event_date,
-            'event_location': event_location,
-            'attendee_name': attendee_name,
-            'ticket_type': ticket_type
-        }
-        
-        # Add to blockchain
-        card_id, card_hash = blockchain.add_card(json.dumps(card_data))
-        
-        # Encrypt the card data with the card_id for verification
-        verification_data = f"{card_id}:{card_hash}"
-        encrypted_data = cipher_suite.encrypt(verification_data.encode()).decode()
-        
-        # Generate QR code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(encrypted_data)
-        qr.make(fit=True)
-        
-        img = qr.make_image(fill_color="black", back_color="white")
-        
-        # Save QR code to BytesIO object
-        buffered = BytesIO()
-        img.save(buffered)
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        
-        return render_template('card.html', 
-                              card_data=card_data, 
-                              qr_code=img_str, 
-                              card_id=card_id,
-                              encrypted_data=encrypted_data)
+        try:
+            # Get form data
+            event_name = request.form.get('event_name')
+            event_date = request.form.get('event_date')
+            event_location = request.form.get('event_location')
+            attendee_name = request.form.get('attendee_name')
+            ticket_type = request.form.get('ticket_type')
+            
+            # Create card data
+            card_data = {
+                'event_name': event_name,
+                'event_date': event_date,
+                'event_location': event_location,
+                'attendee_name': attendee_name,
+                'ticket_type': ticket_type
+            }
+            
+            # Add to blockchain
+            card_id, card_hash = blockchain.add_card(json.dumps(card_data))
+            
+            # Encrypt the card data with the card_id for verification
+            verification_data = f"{card_id}:{card_hash}"
+            encrypted_data = cipher_suite.encrypt(verification_data.encode()).decode()
+            
+            # Generate QR code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(encrypted_data)
+            qr.make(fit=True)
+            
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Save QR code to BytesIO object
+            buffered = BytesIO()
+            img.save(buffered)
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            return render_template('card.html', 
+                                card_data=card_data, 
+                                qr_code=img_str, 
+                                card_id=card_id,
+                                encrypted_data=encrypted_data)
+        except Exception as e:
+            # Log the error
+            print(f"Error in card creation: {str(e)}")
+            # Return an error page
+            return render_template('error.html', error=str(e))
     
     return render_template('create.html')
 
