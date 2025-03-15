@@ -4,12 +4,11 @@ import json
 import qrcode
 import uuid
 from cryptography.fernet import Fernet
-from web3 import Web3
 import base64
 from io import BytesIO
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 
 # Initialize a simple local blockchain for demonstration
 # In production, you would connect to a real blockchain network
@@ -59,17 +58,17 @@ blockchain = SimpleBlockchain()
 def generate_key():
     return Fernet.generate_key()
 
-# Save encryption key
-if not os.path.exists('instance'):
-    os.makedirs('instance')
-    
-if not os.path.exists('instance/key.key'):
-    key = generate_key()
-    with open('instance/key.key', 'wb') as key_file:
-        key_file.write(key)
+# For Vercel deployment, use environment variable for the key
+# If not available, generate a new one (but note this will reset on each deployment)
+ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
+if ENCRYPTION_KEY:
+    # Use the key from environment variable
+    key = ENCRYPTION_KEY.encode()
 else:
-    with open('instance/key.key', 'rb') as key_file:
-        key = key_file.read()
+    # Generate a new key
+    key = generate_key()
+    # Print the key so it can be set as an environment variable
+    print(f"Generated new key: {key.decode()}")
 
 cipher_suite = Fernet(key)
 
