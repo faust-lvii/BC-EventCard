@@ -8,8 +8,22 @@ import base64
 from io import BytesIO
 # Explicitly import PIL for Vercel deployment
 from PIL import Image
+import logging
+import sys
 
-app = Flask(__name__, template_folder='../templates')
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger(__name__)
+
+# Print Python version and environment info
+logger.info(f"Python version: {sys.version}")
+logger.info(f"Python path: {sys.path}")
+
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 
 # Initialize a simple local blockchain for demonstration
@@ -59,124 +73,182 @@ def generate_key():
     return Fernet.generate_key()
 
 # For Vercel, we'll use an environment variable for the key
-# In a production environment, you would use a more secure method
-# like a database or a key management service
-ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
-if ENCRYPTION_KEY:
-    try:
-        # Try to use the key from environment variable
-        key = ENCRYPTION_KEY.encode()
-        # Test if the key is valid by creating a Fernet instance
-        test_cipher = Fernet(key)
-        # If we get here, the key is valid
-    except Exception as e:
-        # If there's an error, generate a new key
-        print(f"Error with provided encryption key: {str(e)}")
-        key = generate_key()
-        print(f"Generated new key: {key.decode()}")
-else:
-    # No key provided, generate a new one
-    key = generate_key()
-    print(f"No encryption key found in environment. Generated new key: {key.decode()}")
-    print("IMPORTANT: Set this key as ENCRYPTION_KEY in your Vercel environment variables")
-
 try:
+    logger.info("Starting encryption key setup")
+    ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
+    
+    if ENCRYPTION_KEY:
+        logger.info("Found ENCRYPTION_KEY in environment variables")
+        try:
+            # Try to use the key from environment variable
+            if isinstance(ENCRYPTION_KEY, str):
+                # Make sure it's a valid base64 string
+                if len(ENCRYPTION_KEY) % 4 != 0:
+                    # Pad the base64 string if needed
+                    ENCRYPTION_KEY += '=' * (4 - len(ENCRYPTION_KEY) % 4)
+                key = ENCRYPTION_KEY.encode()
+            else:
+                key = ENCRYPTION_KEY
+                
+            # Test if the key is valid by creating a Fernet instance
+            test_cipher = Fernet(key)
+            logger.info("Successfully created Fernet cipher with provided key")
+        except Exception as e:
+            logger.error(f"Error with provided encryption key: {str(e)}")
+            # If there's an error, generate a new key
+            key = generate_key()
+            logger.info(f"Generated new key: {key.decode()}")
+    else:
+        # No key provided, generate a new one
+        logger.info("No ENCRYPTION_KEY found in environment variables")
+        key = generate_key()
+        logger.info(f"Generated new key: {key.decode()}")
+        logger.info("IMPORTANT: Set this key as ENCRYPTION_KEY in your Vercel environment variables")
+
+    # Create the cipher suite
     cipher_suite = Fernet(key)
-except Exception as e:
-    print(f"Error creating Fernet cipher: {str(e)}")
-    # As a last resort, generate a new key
+    logger.info("Successfully created Fernet cipher suite")
+except Exception as global_e:
+    logger.error(f"Global exception in encryption setup: {str(global_e)}")
+    # Fallback to a new key as last resort
     key = generate_key()
     cipher_suite = Fernet(key)
-    print(f"Had to generate a new key due to error: {key.decode()}")
+    logger.info(f"Using fallback key due to global exception: {key.decode()}")
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        logger.info("Rendering index page")
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"Error rendering index page: {str(e)}")
+        return f"Error rendering index page: {str(e)}", 500
 
 @app.route('/create', methods=['GET', 'POST'])
 def create():
-    if request.method == 'POST':
-        try:
-            # Get form data
-            event_name = request.form.get('event_name')
-            event_date = request.form.get('event_date')
-            event_location = request.form.get('event_location')
-            attendee_name = request.form.get('attendee_name')
-            ticket_type = request.form.get('ticket_type')
-            
-            # Create card data
-            card_data = {
-                'event_name': event_name,
-                'event_date': event_date,
-                'event_location': event_location,
-                'attendee_name': attendee_name,
-                'ticket_type': ticket_type
-            }
-            
-            # Add to blockchain
-            card_id, card_hash = blockchain.add_card(json.dumps(card_data))
-            
-            # Encrypt the card data with the card_id for verification
-            verification_data = f"{card_id}:{card_hash}"
-            encrypted_data = cipher_suite.encrypt(verification_data.encode()).decode()
-            
-            # Generate QR code
-            qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-            qr.add_data(encrypted_data)
-            qr.make(fit=True)
-            
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            # Save QR code to BytesIO object
-            buffered = BytesIO()
-            img.save(buffered)
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            return render_template('card.html', 
-                                card_data=card_data, 
-                                qr_code=img_str, 
-                                card_id=card_id,
-                                encrypted_data=encrypted_data)
-        except Exception as e:
-            # Log the error
-            print(f"Error in card creation: {str(e)}")
-            # Return an error page
-            return render_template('error.html', error=str(e))
-    
-    return render_template('create.html')
+    try:
+        if request.method == 'POST':
+            try:
+                logger.info("Starting card creation process")
+                # Get form data
+                event_name = request.form.get('event_name')
+                event_date = request.form.get('event_date')
+                event_location = request.form.get('event_location')
+                attendee_name = request.form.get('attendee_name')
+                ticket_type = request.form.get('ticket_type')
+                
+                logger.info(f"Received form data: {event_name}, {event_date}, {event_location}, {attendee_name}, {ticket_type}")
+                
+                # Create card data
+                card_data = {
+                    'event_name': event_name,
+                    'event_date': event_date,
+                    'event_location': event_location,
+                    'attendee_name': attendee_name,
+                    'ticket_type': ticket_type
+                }
+                
+                # Add to blockchain
+                logger.info("Adding card to blockchain")
+                card_id, card_hash = blockchain.add_card(json.dumps(card_data))
+                logger.info(f"Card added with ID: {card_id}")
+                
+                # Encrypt the card data with the card_id for verification
+                verification_data = f"{card_id}:{card_hash}"
+                logger.info("Encrypting verification data")
+                try:
+                    encrypted_data = cipher_suite.encrypt(verification_data.encode()).decode()
+                    logger.info("Successfully encrypted verification data")
+                except Exception as e:
+                    logger.error(f"Error encrypting data: {str(e)}")
+                    raise
+                
+                # Generate QR code
+                logger.info("Generating QR code")
+                try:
+                    qr = qrcode.QRCode(
+                        version=1,
+                        error_correction=qrcode.constants.ERROR_CORRECT_L,
+                        box_size=10,
+                        border=4,
+                    )
+                    qr.add_data(encrypted_data)
+                    qr.make(fit=True)
+                    
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    logger.info("QR code image created")
+                    
+                    # Save QR code to BytesIO object
+                    buffered = BytesIO()
+                    img.save(buffered)
+                    img_str = base64.b64encode(buffered.getvalue()).decode()
+                    logger.info("QR code converted to base64 string")
+                except Exception as e:
+                    logger.error(f"Error generating QR code: {str(e)}")
+                    raise
+                
+                logger.info("Rendering card template")
+                return render_template('card.html', 
+                                    card_data=card_data, 
+                                    qr_code=img_str, 
+                                    card_id=card_id,
+                                    encrypted_data=encrypted_data)
+            except Exception as e:
+                # Log the error
+                logger.error(f"Error in card creation: {str(e)}")
+                # Return an error page
+                return render_template('error.html', error=str(e))
+        
+        logger.info("Rendering create form")
+        return render_template('create.html')
+    except Exception as e:
+        logger.error(f"Unexpected error in create route: {str(e)}")
+        return f"Unexpected error: {str(e)}", 500
 
 @app.route('/verify', methods=['GET', 'POST'])
 def verify():
-    if request.method == 'POST':
-        encrypted_data = request.form.get('encrypted_data')
+    try:
+        if request.method == 'POST':
+            encrypted_data = request.form.get('encrypted_data')
+            logger.info("Starting card verification process")
+            
+            try:
+                # Decrypt the data
+                logger.info("Attempting to decrypt verification data")
+                decrypted_data = cipher_suite.decrypt(encrypted_data.encode()).decode()
+                card_id, card_hash = decrypted_data.split(':')
+                logger.info(f"Successfully decrypted data for card ID: {card_id}")
+                
+                # Verify on blockchain
+                logger.info("Verifying card on blockchain")
+                is_valid, card_data = blockchain.verify_card(card_id, card_hash)
+                
+                if is_valid:
+                    logger.info("Card verified successfully")
+                    card_data = json.loads(card_data)
+                    return render_template('verify_result.html', 
+                                        is_valid=True, 
+                                        card_data=card_data)
+                else:
+                    logger.warning("Card verification failed - not found in blockchain")
+                    return render_template('verify_result.html', 
+                                        is_valid=False)
+            except Exception as e:
+                logger.error(f"Error in card verification: {str(e)}")
+                return render_template('verify_result.html', 
+                                    is_valid=False, 
+                                    error=str(e))
         
-        try:
-            # Decrypt the data
-            decrypted_data = cipher_suite.decrypt(encrypted_data.encode()).decode()
-            card_id, card_hash = decrypted_data.split(':')
-            
-            # Verify on blockchain
-            is_valid, card_data = blockchain.verify_card(card_id, card_hash)
-            
-            if is_valid:
-                card_data = json.loads(card_data)
-                return render_template('verify_result.html', 
-                                      is_valid=True, 
-                                      card_data=card_data)
-            else:
-                return render_template('verify_result.html', 
-                                      is_valid=False)
-        except Exception as e:
-            return render_template('verify_result.html', 
-                                  is_valid=False, 
-                                  error=str(e))
-    
-    return render_template('verify.html')
+        logger.info("Rendering verify form")
+        return render_template('verify.html')
+    except Exception as e:
+        logger.error(f"Unexpected error in verify route: {str(e)}")
+        return f"Unexpected error: {str(e)}", 500
+
+# Special route for Vercel health check
+@app.route('/_health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"}), 200
 
 # This is for local development
 if __name__ == '__main__':
