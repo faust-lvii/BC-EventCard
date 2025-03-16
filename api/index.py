@@ -6,6 +6,8 @@ import uuid
 from cryptography.fernet import Fernet
 import base64
 from io import BytesIO
+# Explicitly import PIL for Vercel deployment
+from PIL import Image
 
 app = Flask(__name__, template_folder='../templates')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
