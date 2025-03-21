@@ -10,6 +10,7 @@ from io import BytesIO
 from PIL import Image
 import logging
 import sys
+import datetime
 
 # Configure logging
 logging.basicConfig(
@@ -23,7 +24,8 @@ logger = logging.getLogger(__name__)
 logger.info(f"Python version: {sys.version}")
 logger.info(f"Python path: {sys.path}")
 
-app = Flask(__name__, template_folder='../templates', static_folder='../static')
+app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'), 
+           static_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static'))
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
 
 # Initialize a simple local blockchain for demonstration
@@ -248,7 +250,39 @@ def verify():
 # Special route for Vercel health check
 @app.route('/_health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "ok"}), 200
+    try:
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        logger.error(f"Error in health check route: {str(e)}")
+        return render_template('error.html', error=str(e))
+
+# API health check endpoint
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    try:
+        # Test the encryption
+        test_data = "health_check"
+        encrypted = cipher_suite.encrypt(test_data.encode())
+        decrypted = cipher_suite.decrypt(encrypted).decode()
+        
+        if decrypted == test_data:
+            return jsonify({
+                "status": "ok",
+                "encryption": "working",
+                "python_version": sys.version,
+                "timestamp": str(datetime.datetime.now())
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Encryption test failed"
+            }), 500
+    except Exception as e:
+        logger.error(f"Error in API health check: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 # This is for local development
 if __name__ == '__main__':
