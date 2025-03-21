@@ -49,7 +49,7 @@
             </div>
             <div class="event-card-footer">
                 <div class="qr-code">
-                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="img-fluid">
+                    {{ qr_code_svg|safe }}
                 </div>
             </div>
         </div>

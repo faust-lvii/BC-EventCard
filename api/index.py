@@ -2,12 +2,13 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 import os
 import json
 import qrcode
+import qrcode.image.svg
 import uuid
 from cryptography.fernet import Fernet
 import base64
 from io import BytesIO
-# Explicitly import PIL for Vercel deployment
-from PIL import Image
+# Remove PIL import as it's causing issues on Vercel
+# from PIL import Image
 import logging
 import sys
 import datetime
@@ -177,7 +178,7 @@ def create():
                     qr.add_data(encrypted_data)
                     qr.make(fit=True)
                     
-                    img = qr.make_image(fill_color="black", back_color="white")
+                    img = qr.make_image(image_factory=qrcode.image.svg.SvgImage)
                     logger.info("QR code image created")
                     
                     # Save QR code to BytesIO object
