@@ -113,3 +113,4 @@ Bu projeyi aşağıdaki platformlarda da deploy edebilirsiniz:
 - **Railway**: Doğrudan GitHub reposundan
 - **Render**: Web servisi olarak
 - **DigitalOcean App Platform**: Container servisi olarak
+________________________________________________________________
