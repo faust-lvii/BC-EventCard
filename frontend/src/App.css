@@ -1,0 +1,487 @@
+:root {
+  --primary-color: #3498db;
+  --secondary-color: #2ecc71;
+  --accent-color: #e74c3c;
+  --background-color: #f8f9fa;
+  --card-background: #ffffff;
+  --text-color: #333333;
+  --light-text: #666666;
+  --border-color: #e0e0e0;
+  --success-color: #2ecc71;
+  --error-color: #e74c3c;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  line-height: 1.6;
+}
+
+#root {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header Styles */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--card-background);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+
+.logo {
+  text-align: left;
+}
+
+.logo h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin: 0;
+}
+
+.logo p {
+  font-size: 0.9rem;
+  color: var(--light-text);
+  margin: 0;
+}
+
+nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+nav a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--primary-color);
+  transition: width 0.3s;
+}
+
+nav a:hover::after {
+  width: 100%;
+}
+
+/* Main Content */
+main {
+  flex: 1;
+  padding: 2rem;
+}
+
+/* Footer Styles */
+footer {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--light-text);
+  border-top: 1px solid var(--border-color);
+  margin-top: 2rem;
+}
+
+/* Button Styles */
+.button, button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.button:hover, button:hover {
+  background-color: #2980b9;
+  transform: translateY(-2px);
+}
+
+.button:disabled, button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Event List Styles */
+.event-list {
+  padding: 1rem 0;
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.event-card {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.event-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.event-card h3 {
+  padding: 1rem;
+  background-color: var(--primary-color);
+  color: white;
+  margin: 0;
+}
+
+.event-info {
+  padding: 1rem;
+}
+
+.event-button {
+  display: block;
+  background-color: var(--primary-color);
+  color: white;
+  text-align: center;
+  padding: 0.75rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.event-button:hover {
+  background-color: #2980b9;
+}
+
+/* Event Details Styles */
+.event-details {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.back-button {
+  background-color: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.back-button:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.event-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.event-status {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.event-status.inactive {
+  background-color: #f39c12;
+  color: white;
+}
+
+.event-status.over {
+  background-color: #7f8c8d;
+  color: white;
+}
+
+.event-status.sold-out {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.event-info-card {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.event-description {
+  margin-bottom: 2rem;
+}
+
+.purchase-section {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ticket-counter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+  gap: 1rem;
+}
+
+.counter-button {
+  width: 40px;
+  height: 40px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.ticket-count {
+  font-size: 1.2rem;
+  font-weight: 500;
+  min-width: 40px;
+  text-align: center;
+}
+
+.price-summary {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.purchase-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background-color: var(--secondary-color);
+}
+
+.purchase-button:hover {
+  background-color: #27ae60;
+}
+
+.connection-warning {
+  text-align: center;
+  color: var(--error-color);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* My Tickets Styles */
+.tickets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.ticket-card {
+  background-color: var(--card-background);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.ticket-card.used {
+  opacity: 0.7;
+}
+
+.ticket-image {
+  width: 100%;
+  height: 150px;
+  position: relative;
+}
+
+.ticket-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.used-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+.ticket-info {
+  padding: 1rem;
+}
+
+.ticket-actions {
+  padding: 0 1rem 1rem;
+}
+
+.transfer-button {
+  width: 100%;
+  background-color: var(--primary-color);
+}
+
+/* Validator Styles */
+.validator {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.validator-form {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin: 2rem 0;
+}
+
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.validate-button {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  background-color: var(--primary-color);
+}
+
+.warning {
+  color: var(--error-color);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.validation-result {
+  background-color: var(--card-background);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-top: 2rem;
+  border-left: 5px solid;
+}
+
+.validation-result.valid {
+  border-left-color: var(--success-color);
+}
+
+.validation-result.invalid {
+  border-left-color: var(--error-color);
+}
+
+.ticket-details {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.mark-used-button {
+  width: 100%;
+  margin-top: 1rem;
+  background-color: var(--secondary-color);
+}
+
+.mark-used-button:hover {
+  background-color: #27ae60;
+}
+
+/* Loading Indicator */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  font-weight: 500;
+  color: var(--light-text);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  
+  .logo {
+    text-align: center;
+  }
+  
+  nav {
+    justify-content: center;
+  }
+  
+  header > div:last-child {
+    align-self: center;
+  }
+  
+  .events-grid, .tickets-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .event-info-card {
+    grid-template-columns: 1fr;
+  }
+}
