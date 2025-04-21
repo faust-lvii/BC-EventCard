@@ -1,121 +1,135 @@
 import { useState, useEffect } from 'react'
 import { useAccount } from 'wagmi'
+import { formatEther } from 'viem'
 
 interface Ticket {
-  id: string
-  eventId: string
+  id: bigint
+  eventId: bigint
   eventName: string
-  date: string
+  date: bigint
+  price: bigint
   used: boolean
-  image: string
 }
 
 export function MyTickets() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState(true)
-  const { address, isConnected, chain } = useAccount()
-  
-  // Zincir ID'sini tespit ediyoruz
-  const chainId = chain?.id || 31337 // Varsayılan olarak Hardhat'i kullan
+  const [error, setError] = useState<string | null>(null)
+  const { address, isConnected } = useAccount()
 
   useEffect(() => {
-    const fetchUserTickets = async () => {
-      if (!isConnected || !address) {
+    const fetchTickets = async () => {
+      if (!isConnected) {
         setTickets([])
         setLoading(false)
         return
       }
-
+      
       try {
         setLoading(true)
+        setError(null)
         
-        // Burada gerçek zincir verilerini çekeceğiz
-        // Şimdilik örnek veriler kullanıyoruz
+        // Mock bilet verileri
+        // Gerçek uygulamada blockchain'den çekilecek
         setTimeout(() => {
-          const mockTickets: Ticket[] = [
-            {
-              id: "1",
-              eventId: "1",
-              eventName: "Blockchain Konferansı 2025",
-              date: "2025-04-21 10:00",
-              used: false,
-              image: "https://placehold.co/400x200/3498db/FFFFFF/png?text=Blockchain+Konferansi+2025"
-            }
-          ]
+          // Eğer kullanıcı bağlıysa, bazı sahte biletler gösterelim
+          if (address) {
+            const mockTickets: Ticket[] = [
+              {
+                id: BigInt(101),
+                eventId: BigInt(1),
+                eventName: "Blockchain Konferansı 2025",
+                date: BigInt(Math.floor(new Date().getTime() / 1000) + 86400 * 7), // 7 gün sonra
+                price: BigInt(10) * BigInt(10)**BigInt(18), // 10 ETH/MATIC
+                used: false
+              },
+              {
+                id: BigInt(102),
+                eventId: BigInt(2),
+                eventName: "NFT Sanat Sergisi",
+                date: BigInt(Math.floor(new Date().getTime() / 1000) + 86400 * 14), // 14 gün sonra
+                price: BigInt(5) * BigInt(10)**BigInt(18), // 5 ETH/MATIC
+                used: false
+              }
+            ]
+            
+            setTickets(mockTickets)
+          } else {
+            setTickets([])
+          }
           
-          setTickets(mockTickets)
           setLoading(false)
         }, 1000)
-        
       } catch (error) {
         console.error("Biletler yüklenirken hata oluştu:", error)
+        setError("Biletleriniz yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
         setLoading(false)
       }
     }
 
-    fetchUserTickets()
-  }, [address, isConnected, chain, chainId])
+    fetchTickets()
+  }, [address, isConnected])
 
-  if (!isConnected) {
-    return (
-      <div className="my-tickets not-connected">
-        <h2>Biletlerim</h2>
-        <p>Biletlerinizi görmek için cüzdanınızı bağlamalısınız.</p>
-      </div>
-    )
+  // Tarih formatını insan tarafından okunabilir hale getiren fonksiyon
+  const formatDate = (timestamp: bigint) => {
+    return new Date(Number(timestamp) * 1000).toLocaleString('tr-TR')
+  }
+
+  // QR kod içeriği oluşturma
+  const getQRContent = (ticket: Ticket) => {
+    // Gerçek uygulamada, bu bir imzalı mesaj olabilir
+    return `TICKET-${ticket.id}-EVENT-${ticket.eventId}-USER-${address?.substring(2, 10)}`
   }
 
   if (loading) {
     return <div className="loading">Biletleriniz yükleniyor...</div>
   }
 
-  if (tickets.length === 0) {
+  if (!isConnected) {
     return (
-      <div className="my-tickets empty">
+      <div className="tickets-page">
         <h2>Biletlerim</h2>
-        <p>Henüz bir biletiniz bulunmuyor.</p>
-        <a href="/" className="button">Etkinliklere Göz At</a>
+        <p className="connect-wallet">Biletlerinizi görmek için cüzdanınızı bağlamanız gerekiyor.</p>
       </div>
     )
   }
 
-  const handleTransfer = (ticketId: string) => {
-    // Bilet transfer işlemi burada gerçekleştirilecek
-    alert(`Transfer işlemi için ${ticketId} no'lu bilet seçildi.`)
-  }
-
   return (
-    <div className="my-tickets">
+    <div className="tickets-page">
       <h2>Biletlerim</h2>
       
-      <div className="tickets-grid">
-        {tickets.map((ticket) => (
-          <div key={ticket.id} className={`ticket-card ${ticket.used ? 'used' : ''}`}>
-            <div className="ticket-image">
-              <img src={ticket.image} alt={ticket.eventName} />
-              {ticket.used && <div className="used-overlay">KULLANILDI</div>}
-            </div>
-            
-            <div className="ticket-info">
-              <h3>{ticket.eventName}</h3>
-              <p><strong>Bilet No:</strong> #{ticket.id}</p>
-              <p><strong>Tarih:</strong> {ticket.date}</p>
-              <p><strong>Durum:</strong> {ticket.used ? 'Kullanıldı' : 'Aktif'}</p>
-            </div>
-            
-            {!ticket.used && (
-              <div className="ticket-actions">
-                <button 
-                  className="transfer-button"
-                  onClick={() => handleTransfer(ticket.id)}
-                >
-                  Transfer Et
-                </button>
+      {error && <div className="error-message">{error}</div>}
+      
+      {tickets.length === 0 ? (
+        <p>Henüz bir biletiniz bulunmuyor. <a href="/">Etkinlikler sayfasından</a> bir etkinlik bileti satın alabilirsiniz.</p>
+      ) : (
+        <div className="tickets-grid">
+          {tickets.map((ticket) => (
+            <div key={ticket.id.toString()} className="ticket-card">
+              <div className="ticket-header">
+                <h3>{ticket.eventName}</h3>
+                {ticket.used && <span className="ticket-used">Kullanıldı</span>}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+              
+              <div className="ticket-details">
+                <p><strong>Bilet ID:</strong> #{ticket.id.toString()}</p>
+                <p><strong>Tarih:</strong> {formatDate(ticket.date)}</p>
+                <p><strong>Fiyat:</strong> {formatEther(ticket.price)} ETH</p>
+                <p><strong>Durum:</strong> {ticket.used ? 'Kullanıldı' : 'Aktif'}</p>
+              </div>
+              
+              {!ticket.used && (
+                <div className="ticket-qr">
+                  <p>QR Kodu:</p>
+                  <div className="qr-code-placeholder">
+                    {getQRContent(ticket)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

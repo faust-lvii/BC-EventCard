@@ -1,19 +1,21 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
 import { http } from 'viem';
-import { hardhat, sepolia, polygonMumbai } from 'viem/chains';
+import { hardhat, mainnet } from 'viem/chains';
+
+// Bu örnek ve basit bir ID'dir - gerçek uygulamada değiştirin
+const projectId = 'bc2e0f0e8b4f5e214d3c8fcb2e8cc5a9';
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'BC-EventCard',
-  projectId: 'YOUR_WALLET_CONNECT_PROJECT_ID', // Bu değeri WalletConnect'ten almalısınız
+  projectId: projectId,
   chains: [
     hardhat,
-    sepolia,
-    polygonMumbai
+    mainnet
   ],
   transports: {
     [hardhat.id]: http('http://127.0.0.1:8545'),
-    [sepolia.id]: http('https://sepolia.infura.io/v3/YOUR_INFURA_KEY'), // Bu değeri Infura'dan almalısınız
-    [polygonMumbai.id]: http('https://polygon-mumbai.infura.io/v3/YOUR_INFURA_KEY') // Bu değeri Infura'dan almalısınız
+    [mainnet.id]: http('https://ethereum.publicnode.com'),
   },
-  ssr: true,
+  // RainbowKit v2'de wallets özelliği dışarıda bırakılabilir
+  // Bu durumda MetaMask dahil tüm desteklenen cüzdanlar gösterilir
 });
