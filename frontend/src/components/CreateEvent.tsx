@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useAccount } from 'wagmi'
 import { parseEther } from 'viem'
+import { Button } from '../ui/Button'
+import { Alert, AlertType } from '../ui/Alert'
+import { eventManagerABI } from '../contracts/abis/eventManagerABI'
+import { EVENT_MANAGER_ADDRESS } from '../config/contractAddresses'
+import { useContractWrite, useWaitForTransaction } from '../lib/wagmiAdapter'
 
 // Etkinlik arayüzü tanımı
 export interface Event {
@@ -15,44 +20,53 @@ export interface Event {
   metadataBase: string
 }
 
+// Form interface
+interface EventFormData {
+  name: string;
+  date: string;
+  price: string;
+  maxTickets: string;
+  metadataBase: string;
+}
+
 export function CreateEvent() {
-  const { address, chain } = useAccount()
+  const { isConnected } = useAccount()
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EventFormData>({
     name: '',
     date: '',
     price: '',
     maxTickets: '',
-    metadataBase: 'ipfs://QmDefaultCID' // Varsayılan IPFS CID
+    metadataBase: 'ipfs://QmDefaultCID'
   })
   
   const [formError, setFormError] = useState<string | null>(null)
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
+  
+  // Contract interaction setup
+  const { writeAsync: createEvent, data: createEventData } = useContractWrite({
+    address: EVENT_MANAGER_ADDRESS,
+    abi: eventManagerABI,
+    functionName: 'createEvent',
+  })
+  
+  // Wait for transaction to complete
+  const { 
+    isLoading: isProcessing, 
+    isSuccess 
+  } = useWaitForTransaction({
+    hash: createEventData,
+  })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
-    setFormError(null) // Her değişiklikte hata mesajını temizle
+    setFormError(null)
   }
 
-  // localStorage'den mevcut etkinlikleri alır
-  const getExistingEvents = (): Event[] => {
-    const eventsString = localStorage.getItem('events')
-    return eventsString ? JSON.parse(eventsString) : []
-  }
-
-  // localStorage'e yeni etkinlik ekler
-  const saveEventToLocalStorage = (newEvent: Event) => {
-    const existingEvents = getExistingEvents()
-    const updatedEvents = [...existingEvents, newEvent]
-    localStorage.setItem('events', JSON.stringify(updatedEvents))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Temel form doğrulama
+    // Form validation
     if (!formData.name.trim()) {
       return setFormError("Etkinlik adı gereklidir")
     }
@@ -61,8 +75,8 @@ export function CreateEvent() {
       return setFormError("Etkinlik tarihi gereklidir")
     }
     
-    const eventDate = new Date(formData.date).getTime() / 1000
-    if (eventDate <= Date.now() / 1000) {
+    const eventDateTimestamp = Math.floor(new Date(formData.date).getTime() / 1000)
+    if (eventDateTimestamp <= Date.now() / 1000) {
       return setFormError("Etkinlik tarihi gelecekte olmalıdır")
     }
     
@@ -74,62 +88,32 @@ export function CreateEvent() {
       return setFormError("Geçerli bir maksimum bilet sayısı giriniz")
     }
     
-    // Simülasyon: İşlem başlatma
-    setIsProcessing(true)
-    
-    // Yeni etkinlik için özgün ID oluştur
-    const existingEvents = getExistingEvents()
-    const nextId = existingEvents.length > 0 
-      ? BigInt(Number(existingEvents[existingEvents.length - 1].id) + 1)
-      : BigInt(existingEvents.length + 1)
-    
     try {
-      // Yeni etkinlik nesnesi oluştur
-      const newEvent: Event = {
-        id: nextId,
-        name: formData.name,
-        date: BigInt(Math.floor(eventDate)),
-        price: parseEther(formData.price),
-        maxTickets: BigInt(parseInt(formData.maxTickets)),
-        soldTickets: BigInt(0), // Başlangıçta satılan bilet yok
-        active: true,
-        organizer: address || "0x0000000000000000000000000000000000000000",
-        metadataBase: formData.metadataBase
-      }
-      
-      // localStorage'e kaydet
-      saveEventToLocalStorage(newEvent)
-      
-      // 2 saniye sonra işlem tamamlandı göster
-      setTimeout(() => {
-        setIsProcessing(false)
-        setIsSuccess(true)
-        
-        // Form verilerini temizle
-        setFormData({
-          name: '',
-          date: '',
-          price: '',
-          maxTickets: '',
-          metadataBase: 'ipfs://QmDefaultCID'
-        })
-        
-        // 5 saniye sonra başarı mesajını kaldır
-        setTimeout(() => setIsSuccess(false), 5000)
-      }, 2000)
+      // Create the event on the blockchain
+      await createEvent({
+        args: [
+          formData.name,
+          BigInt(eventDateTimestamp),
+          parseEther(formData.price),
+          BigInt(parseInt(formData.maxTickets)),
+          formData.metadataBase
+        ]
+      })
     } catch (error) {
-      setIsProcessing(false)
-      setFormError("Etkinlik oluşturulurken bir hata oluştu.")
       console.error("Etkinlik oluşturma hatası:", error)
+      setFormError("Etkinlik oluşturulurken bir hata oluştu.")
     }
   }
 
-  // Cüzdan bağlı değilse
-  if (!address) {
+  // If wallet is not connected
+  if (!isConnected) {
     return (
       <div className="create-event">
         <h2>Etkinlik Oluştur</h2>
-        <p className="warning">Etkinlik oluşturmak için cüzdanınızı bağlamanız gerekiyor.</p>
+        <Alert 
+          type={AlertType.WARNING} 
+          message="Etkinlik oluşturmak için cüzdanınızı bağlamanız gerekiyor." 
+        />
       </div>
     )
   }
@@ -139,15 +123,20 @@ export function CreateEvent() {
       <h2>Yeni Etkinlik Oluştur</h2>
       
       {isSuccess && (
-        <div className="success-message">
-          Etkinlik başarıyla oluşturuldu! Etkinlikler listesinde görüntüleyebilirsiniz.
-        </div>
+        <Alert
+          type={AlertType.SUCCESS}
+          message="Etkinlik başarıyla oluşturuldu! Etkinlikler listesinde görüntüleyebilirsiniz."
+          autoClose={true}
+          duration={5000}
+        />
       )}
       
       {formError && (
-        <div className="error-message">
-          {formError}
-        </div>
+        <Alert
+          type={AlertType.ERROR}
+          message={formError}
+          onClose={() => setFormError(null)}
+        />
       )}
       
       <form onSubmit={handleSubmit}>
@@ -160,6 +149,7 @@ export function CreateEvent() {
             value={formData.name}
             onChange={handleChange}
             placeholder="Etkinlik adını girin"
+            disabled={isProcessing}
             required
           />
         </div>
@@ -172,6 +162,7 @@ export function CreateEvent() {
             name="date"
             value={formData.date}
             onChange={handleChange}
+            disabled={isProcessing}
             required
           />
         </div>
@@ -187,6 +178,7 @@ export function CreateEvent() {
             placeholder="0.01"
             step="0.000000000000000001"
             min="0"
+            disabled={isProcessing}
             required
           />
         </div>
@@ -201,6 +193,7 @@ export function CreateEvent() {
             onChange={handleChange}
             placeholder="100"
             min="1"
+            disabled={isProcessing}
             required
           />
         </div>
@@ -214,17 +207,43 @@ export function CreateEvent() {
             value={formData.metadataBase}
             onChange={handleChange}
             placeholder="ipfs://CID"
+            disabled={isProcessing}
           />
+          <small className="form-help">
+            Etkinlik bilgileri ve görselleri için IPFS CID'sini giriniz. Örnek: ipfs://QmYourCID
+          </small>
         </div>
         
-        <button 
+        <Button 
           type="submit" 
           disabled={isProcessing}
-          className="primary-button"
+          loading={isProcessing}
+          variant="primary"
+          fullWidth
         >
-          {isProcessing ? "İşlem Sürüyor..." : "Etkinlik Oluştur"}
-        </button>
+          Etkinlik Oluştur
+        </Button>
       </form>
+      
+      {/* Form guide */}
+      <div className="form-guide">
+        <h3>IPFS Metadata Formatı</h3>
+        <p>
+          Etkinlik metadatasının aşağıdaki şemaya uygun olması önerilir:
+        </p>
+        <pre>
+{`{
+  "name": "Etkinlik Adı",
+  "description": "Etkinlik açıklaması",
+  "image": "ipfs://QmImageCID",
+  "external_url": "https://your-site.com/event",
+  "attributes": [
+    { "trait_type": "Yer", "value": "Etkinlik Mekanı" },
+    { "trait_type": "Kategori", "value": "Müzik" }
+  ]
+}`}
+        </pre>
+      </div>
     </div>
   )
 } 

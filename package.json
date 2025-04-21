@@ -1,0 +1,28 @@
+{
+  "name": "bc-eventcard",
+  "version": "0.1.0",
+  "description": "Blockchain Event Ticketing System",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "test": "cd contracts && npx hardhat test"
+  },
+  "workspaces": [
+    "frontend",
+    "contracts"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "event",
+    "ticketing",
+    "NFT"
+  ],
+  "author": "",
+  "license": "MIT"
+} 

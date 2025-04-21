@@ -18,7 +18,13 @@ export function EventList() {
       if (eventsString) {
         // JSON.parse ile alınan veriler bigint tipini kaybeder, dönüştürmemiz gerekiyor
         const parsedEvents = JSON.parse(eventsString);
-        return parsedEvents.map((event: any) => ({
+        return parsedEvents.map((event: Omit<Event, 'id' | 'date' | 'price' | 'maxTickets' | 'soldTickets'> & { 
+          id: string | number;
+          date: string | number;
+          price: string | number;
+          maxTickets: string | number;
+          soldTickets: string | number;
+        }) => ({
           ...event,
           id: BigInt(event.id),
           date: BigInt(event.date),

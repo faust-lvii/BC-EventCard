@@ -1,45 +1,24 @@
-import { StrictMode, ReactNode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-
-import '@rainbow-me/rainbowkit/styles.css'
-import { RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
 import { WagmiProvider } from 'wagmi'
+import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { wagmiConfig } from './config/wagmi'
+import App from './App.tsx'
+import { config } from './config/wagmi'
+import '@rainbow-me/rainbowkit/styles.css'
+import './index.css'
 
+// Create a client
 const queryClient = new QueryClient()
 
-// Disclaimer bileşeni için tip tanımlama
-type DisclaimerProps = {
-  Text: React.FC<{ children: ReactNode }>
-  Link: React.FC<{ href: string; children: ReactNode }>
-}
-
-// Disclaimer bileşeni
-const Disclaimer = ({ Text, Link }: DisclaimerProps) => (
-  <Text>
-    Bu uygulama eğitim amaçlıdır. Kendi sorumluluğunuzda kullanın.{' '}
-    <Link href="https://github.com/yourusername/BC-EventCard">Daha fazla bilgi</Link>
-  </Text>
-);
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <WagmiProvider config={wagmiConfig}>
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={darkTheme()}
-          modalSize="compact"
-          appInfo={{
-            appName: 'BC-EventCard',
-            disclaimer: Disclaimer
-          }}
-        >
+        <RainbowKitProvider>
           <App />
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  </StrictMode>,
+  </React.StrictMode>,
 )
