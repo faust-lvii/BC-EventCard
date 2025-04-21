@@ -3,18 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { formatEther } from 'viem'
 import { CONTRACT_ADDRESSES } from '../contracts'
-
-interface Event {
-  id: bigint
-  name: string
-  date: bigint
-  price: bigint
-  maxTickets: bigint
-  soldTickets: bigint
-  active: boolean
-  organizer: string
-  metadataBase: string
-}
+import { Event } from './CreateEvent'
 
 export function EventDetails() {
   const { eventId } = useParams<{ eventId: string }>()
@@ -32,6 +21,75 @@ export function EventDetails() {
   // Sözleşme adreslerini seçiyoruz
   const eventManagerAddress = CONTRACT_ADDRESSES[chainId as keyof typeof CONTRACT_ADDRESSES]?.eventManager
 
+  // localStorage'den etkinliği alır
+  const getEventFromLocalStorage = (id: string): Event | null => {
+    try {
+      const eventsString = localStorage.getItem('events')
+      if (eventsString) {
+        // JSON.parse ile alınan veriler bigint tipini kaybeder, dönüştürmemiz gerekiyor
+        const parsedEvents = JSON.parse(eventsString);
+        const event = parsedEvents.find((e: any) => e.id.toString() === id);
+        
+        if (event) {
+          return {
+            ...event,
+            id: BigInt(event.id),
+            date: BigInt(event.date),
+            price: BigInt(event.price),
+            maxTickets: BigInt(event.maxTickets),
+            soldTickets: BigInt(event.soldTickets)
+          };
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error("localStorage'dan etkinlik okurken hata:", error);
+      return null;
+    }
+  };
+
+  // localStorage'e bilet satın alımını kaydeder
+  const savePurchaseToLocalStorage = (eventId: string) => {
+    try {
+      const eventsString = localStorage.getItem('events')
+      if (eventsString) {
+        const parsedEvents = JSON.parse(eventsString);
+        const updatedEvents = parsedEvents.map((e: any) => {
+          if (e.id.toString() === eventId) {
+            return { 
+              ...e, 
+              soldTickets: (parseInt(e.soldTickets) + 1).toString() 
+            };
+          }
+          return e;
+        });
+        
+        localStorage.setItem('events', JSON.stringify(updatedEvents));
+        
+        // Biletleri de kaydet
+        const ticketsString = localStorage.getItem('tickets') || '[]';
+        const tickets = JSON.parse(ticketsString);
+        const eventObj = parsedEvents.find((e: any) => e.id.toString() === eventId);
+        
+        if (eventObj) {
+          const newTicket = {
+            id: Date.now().toString(), // Benzersiz ID
+            eventId: eventId,
+            eventName: eventObj.name,
+            date: eventObj.date,
+            price: eventObj.price,
+            used: false
+          };
+          
+          tickets.push(newTicket);
+          localStorage.setItem('tickets', JSON.stringify(tickets));
+        }
+      }
+    } catch (error) {
+      console.error("localStorage'a bilet satın alma işlemi kaydedilirken hata:", error);
+    }
+  };
+
   useEffect(() => {
     const fetchEventDetails = async () => {
       try {
@@ -42,20 +100,27 @@ export function EventDetails() {
           throw new Error("Geçersiz etkinlik ID'si")
         }
         
-        // Mock veri kullanıyoruz
-        const mockEvent: Event = {
-          id: BigInt(eventId),
-          name: `Etkinlik ${eventId}`,
-          date: BigInt(Math.floor(new Date().getTime() / 1000) + 86400 * 7), // 7 gün sonra
-          price: BigInt(10) * BigInt(10)**BigInt(18), // 10 ETH/MATIC
-          maxTickets: BigInt(100),
-          soldTickets: BigInt(42),
-          active: true,
-          organizer: "0x0000000000000000000000000000000000000000",
-          metadataBase: "ipfs://QmHash"
-        }
+        // localStorage'dan etkinliği al
+        const event = getEventFromLocalStorage(eventId);
         
-        setEvent(mockEvent)
+        if (event) {
+          setEvent(event);
+        } else {
+          // localStorage'da yoksa mock veri oluştur
+          const mockEvent: Event = {
+            id: BigInt(eventId),
+            name: `Etkinlik ${eventId}`,
+            date: BigInt(Math.floor(new Date().getTime() / 1000) + 86400 * 7), // 7 gün sonra
+            price: BigInt(10) * BigInt(10)**BigInt(18), // 10 ETH/MATIC
+            maxTickets: BigInt(100),
+            soldTickets: BigInt(42),
+            active: true,
+            organizer: "0x0000000000000000000000000000000000000000",
+            metadataBase: "ipfs://QmHash"
+          }
+          
+          setEvent(mockEvent)
+        }
       } catch (error) {
         console.error("Etkinlik detayları yüklenirken hata oluştu:", error)
         setError("Etkinlik detayları yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyin.")
@@ -74,12 +139,15 @@ export function EventDetails() {
   
   // Bilet satın alma işlemi (simülasyon)
   const handlePurchase = () => {
-    if (!event || !address) return
+    if (!event || !address || !eventId) return
     
     setIsPurchasing(true)
     
     // Simülasyon: 2 saniye sonra başarılı işlem
     setTimeout(() => {
+      // Bilet satın alma işlemini localStorage'e kaydet
+      savePurchaseToLocalStorage(eventId);
+      
       setPurchaseSuccess(true)
       setIsPurchasing(false)
       
