@@ -1,4 +1,4 @@
-# BC-EventCard: Blockchain-Based Event Ticketing System "test"
+# BC-EventCard: Blockchain-Based Event Ticketing System 
 
 <div align="center">
   <img src="https://img.shields.io/badge/Blockchain-Ethereum-blue"/>
