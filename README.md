@@ -43,7 +43,7 @@ BC-EventCard is a decentralized event ticketing platform built on blockchain tec
 
 ```bash
 # Clone the repository
-git clone https://github.com/faust-lvii/BC-EventCard.git
+git clone https://github.com/yusufokuducu/BC-EventCard.git
 cd BC-EventCard
 
 # Install dependencies
